@@ -1,6 +1,7 @@
 # Taken straight from Patter https://github.com/ryanleary/patter
 # TODO: review, and copyright and fix/add comments
 import json
+import os
 import string
 
 from nemo.utils import get_logger
@@ -75,6 +76,10 @@ class ManifestBase():
                 )
                 item['audio_filepath'] = item['audio_filename']
 
+            if not os.path.exists(item['audio_filepath']) \
+                and os.path.exists(os.path.join(os.path.dirname(item['manifest']), item['audio_filepath'])):
+                item['audio_filepath'] = os.path.join(os.path.dirname(item['manifest']), item['audio_filepath'])
+
             data.append(item)
             duration += item['duration']
 
@@ -129,7 +134,13 @@ class ManifestBase():
         for manifest_path in manifest_paths:
             with open(manifest_path, "r", encoding="utf-8") as fh:
                 for line in fh:
-                    yield json.loads(line)
+                    try:
+                        result = json.loads(line)
+                        result['manifest'] = manifest_path
+                        yield result
+                    except Exception as e:
+                        # print(line)
+                        continue
 
     @staticmethod
     def load_transcript(transcript_path):

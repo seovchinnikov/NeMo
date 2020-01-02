@@ -6,7 +6,6 @@ from __future__ import absolute_import
 import argparse
 import io
 import shutil
-import types
 from glob import glob
 from os.path import join, exists, basename
 import os
@@ -15,12 +14,12 @@ import srt
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 import youtube_dl
-from youtube_dl.compat import compat_str
+
 from youtube_dl.postprocessor import FFmpegPostProcessor
 from youtube_dl.postprocessor.common import AudioConversionError
 from youtube_dl.postprocessor.ffmpeg import FFmpegPostProcessorError
 
-from .logging_utils import get_logger
+from nemo_asr.dataset.youtube.logging_utils import get_logger
 
 logger = get_logger('yt_list')
 
@@ -107,7 +106,8 @@ def append_to_manifest(manifest, audio_path, subs_srt_path):
         parsed = srt.parse(srt_f)
         for sub in parsed:
             manifest.write('{"audio_filepath": "%s", "offset": %s, "duration": %s, "text": "%s"}\n' %
-                           (audio_path, sub.start.total_seconds(), (sub.end - sub.start).total_seconds(), sub.content))
+                           (os.path.basename(audio_path), sub.start.total_seconds(), (sub.end - sub.start).total_seconds(),
+                            sub.content.replace('\r', '').replace('\n', '').replace('"', '').replace("'", '')))
 
 
 def crawl(list_dir, target_dir, threads, lang):
