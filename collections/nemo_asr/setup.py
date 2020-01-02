@@ -29,6 +29,9 @@ setuptools.setup(
         'marshmallow',
         'ruamel.yaml',
         'sox',
-        'unidecode'
+        'unidecode',
+        'youtube-dl',
+        'srt',
+        'futures'
     ]
 )

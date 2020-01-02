@@ -1,0 +1,4 @@
+youtube-dl
+srt
+futures
+tqdm
