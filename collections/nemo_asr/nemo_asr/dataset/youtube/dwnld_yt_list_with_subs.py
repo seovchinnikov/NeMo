@@ -104,11 +104,22 @@ def process_video(url, target_dir, lang):
 def append_to_manifest(manifest, audio_path, subs_srt_path):
     with io.open(subs_srt_path, 'r', encoding="utf-8", errors='replace') as srt_f:
         parsed = srt.parse(srt_f)
+        start = None
+        end = None
+        text = ''
         for sub in parsed:
-            manifest.write('{"audio_filepath": "%s", "offset": %s, "duration": %s, "text": "%s"}\n' %
-                           (os.path.basename(audio_path), sub.start.total_seconds(), (sub.end - sub.start).total_seconds(),
-                            sub.content.replace('\r', ' ').replace('\n', ' ').replace('"', '').replace("'", '')))
+            if start is None:
+                start = sub.start.total_seconds()
 
+            if start + 16.7 < sub.end.total_seconds() and len(text) > 0:
+                manifest.write('{"audio_filepath": "%s", "offset": %s, "duration": %s, "text": "%s"}\n' %
+                               (os.path.basename(audio_path), start, end - start,
+                                text))
+                start = sub.start.total_seconds()
+                text = ''
+
+            text += ' ' + sub.content.replace('\r', ' ').replace('\n', ' ').replace('"', '').replace("'", '')
+            end = sub.end.total_seconds()
 
 def crawl(list_dir, target_dir, threads, lang):
     urls = set(load_url_list(list_dir))
