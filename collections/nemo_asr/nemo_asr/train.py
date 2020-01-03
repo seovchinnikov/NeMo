@@ -5,8 +5,10 @@ import nemo_asr
 
 # Create a Neural Factory
 # It creates log files and tensorboard writers for us among other functions
+from parts.manifest import ManifestENRU
+
 nf = nemo.core.NeuralModuleFactory(
-    log_dir='jasper12x1SEP',
+    log_dir='quartznet10x5_ru',
     create_tb_writer=True)
 tb_writer = nf.tb_writer
 logger = nf.logger
@@ -23,17 +25,17 @@ from ruamel.yaml import YAML
 # Here we will be using separable convolutions
 # with 12 blocks (k=12 repeated once r=1 from the picture above)
 yaml = YAML(typ="safe")
-with open("../../../examples/asr/configs/quartznet10x5.yaml") as f:
+with open("../../../examples/asr/configs/quartznet10x5_ru.yaml") as f:
     jasper_model_definition = yaml.load(f)
 labels = jasper_model_definition['labels']
 
 # Instantiate neural modules
 data_layer = nemo_asr.AudioToTextDataLayer(
     manifest_filepath=train_dataset,
-    labels=labels, batch_size=32)
+    labels=labels, batch_size=32, manifest_class=ManifestENRU)
 data_layer_val = nemo_asr.AudioToTextDataLayer(
     manifest_filepath=eval_datasets,
-    labels=labels, batch_size=32, shuffle=False)
+    labels=labels, batch_size=32, shuffle=False, manifest_class=ManifestENRU)
 
 data_preprocessor = nemo_asr.AudioToMelSpectrogramPreprocessor()
 spec_augment = nemo_asr.SpectrogramAugmentation(rect_masks=5)

@@ -3,6 +3,8 @@
 This package contains Neural Modules responsible for ASR-related
 data layers.
 """
+from parts import ManifestEN
+
 __all__ = ['AudioToTextDataLayer',
            'KaldiFeatureDataLayer',
            'TranscriptDataLayer']
@@ -147,7 +149,8 @@ transcript_n}
                           'bos_id': bos_id,
                           'eos_id': eos_id,
                           'logger': self._logger,
-                          'load_audio': load_audio}
+                          'load_audio': load_audio,
+                          'manifest_class': kwargs['manifest_class'] if 'manifest_class' in kwargs else ManifestEN}
 
         self._dataset = AudioDataset(**dataset_params)
 

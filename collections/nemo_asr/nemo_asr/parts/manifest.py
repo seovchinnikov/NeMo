@@ -1,11 +1,15 @@
+# coding=utf-8
 # Taken straight from Patter https://github.com/ryanleary/patter
 # TODO: review, and copyright and fix/add comments
 import json
 import os
+import re
 import string
 
+from unidecode import unidecode
+
 from nemo.utils import get_logger
-from .cleaners import clean_text
+from .cleaners import clean_text, clean_abbreviations, clean_punctuations, clean_numbers, warn_common_chars
 
 
 class ManifestBase():
@@ -201,3 +205,58 @@ class ManifestEN(ManifestBase):
             return None
 
         return text
+
+class ManifestENRU(ManifestBase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @staticmethod
+    def normalize_text(text, labels, logger=None):
+        # Punctuation to remove
+        punctuation = string.punctuation
+        # Define punctuation that will be handled by text cleaner
+        punctuation_to_replace = {
+            "+": "plus",
+            "&": "and",
+            "%": "percent"
+        }
+        for char in punctuation_to_replace:
+            punctuation = punctuation.replace(char, "")
+        # We might also want to consider:
+        # @ -> at
+        # -> number, pound, hashtag
+        # ~ -> tilde
+        # _ -> underscore
+
+        # If a punctuation symbol is inside our vocab, we do not remove
+        # from text
+        for l in labels:
+            punctuation = punctuation.replace(l, "")
+
+        # Turn all other punctuation to whitespace
+        table = str.maketrans(punctuation, " " * len(punctuation))
+
+        try:
+            text = ManifestENRU.clean_text(text, table, punctuation_to_replace)
+        except BaseException:
+            if logger:
+                logger.warning("WARNING: Normalizing {} failed".format(text))
+            else:
+                print("WARNING: Normalizing {} failed".format(text))
+            return None
+
+        return text
+
+    @staticmethod
+    def clean_text(string, table, punctuation_to_replace):
+        warn_common_chars(string)
+        # string = unidecode(string)
+        safe_pattern = re.compile(r"[^a-zA-Z0-9а-яА-Я &%+']")
+        string = re.sub(safe_pattern, '', string)
+        string = string.lower()
+        string = re.sub(r'\s+', " ", string)
+        string = clean_numbers(string)
+        string = clean_abbreviations(string)
+        string = clean_punctuations(string, table, punctuation_to_replace)
+        string = re.sub(r'\s+', " ", string).strip()
+        return string

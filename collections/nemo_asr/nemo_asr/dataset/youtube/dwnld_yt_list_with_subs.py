@@ -107,7 +107,7 @@ def append_to_manifest(manifest, audio_path, subs_srt_path):
         for sub in parsed:
             manifest.write('{"audio_filepath": "%s", "offset": %s, "duration": %s, "text": "%s"}\n' %
                            (os.path.basename(audio_path), sub.start.total_seconds(), (sub.end - sub.start).total_seconds(),
-                            sub.content.replace('\r', '').replace('\n', '').replace('"', '').replace("'", '')))
+                            sub.content.replace('\r', ' ').replace('\n', ' ').replace('"', '').replace("'", '')))
 
 
 def crawl(list_dir, target_dir, threads, lang):
