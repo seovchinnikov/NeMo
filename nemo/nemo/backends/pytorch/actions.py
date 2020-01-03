@@ -1589,6 +1589,8 @@ class PtActions(Actions):
             )
 
             for mod, checkpoint in zip(modules_to_restore, module_checkpoints):
+                if checkpoint is None:
+                    continue
                 if logger:
                     logger.info(f"Restoring {mod} from {checkpoint}")
                 mod.restore_from(checkpoint, self._local_rank)

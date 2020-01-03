@@ -45,6 +45,8 @@ def get_checkpoint_from_dir(module_names, cpkt_dir, ckpt_pattern=''):
 
         module_ckpts = glob.glob(f'{cpkt_dir}/{module}*{ckpt_pattern}*')
         if not module_ckpts:
+            #ckpts.append(None)
+            #continue
             raise ValueError(f'For module {module}, '
                              f'no file matches {ckpt_pattern} in {cpkt_dir}')
 

@@ -8,7 +8,8 @@ import nemo_asr
 from parts.manifest import ManifestENRU
 
 nf = nemo.core.NeuralModuleFactory(
-    log_dir='quartznet10x5_ru',
+    log_dir='quartznet15x5_ru',
+    optimization_level=nemo.core.Optimization.mxprO1,
     create_tb_writer=True)
 tb_writer = nf.tb_writer
 logger = nf.logger
@@ -25,17 +26,17 @@ from ruamel.yaml import YAML
 # Here we will be using separable convolutions
 # with 12 blocks (k=12 repeated once r=1 from the picture above)
 yaml = YAML(typ="safe")
-with open("../../../examples/asr/configs/quartznet10x5_ru.yaml") as f:
+with open("../../../examples/asr/configs/quartznet15x5_ru.yaml") as f:
     jasper_model_definition = yaml.load(f)
 labels = jasper_model_definition['labels']
 
 # Instantiate neural modules
 data_layer = nemo_asr.AudioToTextDataLayer(
     manifest_filepath=train_dataset,
-    labels=labels, batch_size=32, manifest_class=ManifestENRU)
+    labels=labels, batch_size=10, manifest_class=ManifestENRU)
 data_layer_val = nemo_asr.AudioToTextDataLayer(
     manifest_filepath=eval_datasets,
-    labels=labels, batch_size=32, shuffle=False, manifest_class=ManifestENRU)
+    labels=labels, batch_size=4, shuffle=False, manifest_class=ManifestENRU)
 
 data_preprocessor = nemo_asr.AudioToMelSpectrogramPreprocessor()
 spec_augment = nemo_asr.SpectrogramAugmentation(rect_masks=5)
@@ -43,6 +44,7 @@ spec_augment = nemo_asr.SpectrogramAugmentation(rect_masks=5)
 jasper_encoder = nemo_asr.JasperEncoder(
     feat_in=64,
     **jasper_model_definition['JasperEncoder'])
+jasper_encoder.restore_from('./chkp/JasperEncoder-STEP-247400.pt')
 jasper_decoder = nemo_asr.JasperDecoderForCTC(
     feat_in=1024, num_classes=len(labels))
 ctc_loss = nemo_asr.CTCLossNM(num_classes=len(labels))
@@ -101,7 +103,7 @@ train_callback = nemo.core.SimpleLossLoggerCallback(
 saver_callback = nemo.core.CheckpointCallback(
     folder="./chkp",
     # Set how often we want to save checkpoints
-    step_freq=100)
+    step_freq=3500)
 
 # PRO TIP: while you can only have 1 train DAG, you can have as many
 # val DAGs and callbacks as you want. This is useful if you want to monitor
@@ -118,7 +120,7 @@ eval_callback = nemo.core.EvaluatorCallback(
     user_epochs_done_callback=partial(
         process_evaluation_epoch, tag="DEV-CLEAN", logger=logger
         ),
-    eval_step=500,
+    eval_step=3500,
     tb_writer=tb_writer)
 
 # Run training using your Neural Factory
@@ -133,6 +135,7 @@ nf.train(
     optimizer="novograd",
     # Specify optimizer parameters such as num_epochs and lr
     optimization_params={
-        "num_epochs": 50, "lr": 0.02, "weight_decay": 1e-4
-        }
+        "num_epochs": 100, "lr": 0.01, "weight_decay": 1e-4
+        },
+    batches_per_step=5
     )
