@@ -1,8 +1,10 @@
 # Copyright (c) 2019 NVIDIA Corporation
+from functools import partial
 
 import inflect
 import re
 
+from num2words import num2words
 from unidecode import unidecode
 
 NUM_CHECK = re.compile(r'([$]?)(^|\s)(\S*[0-9]\S*)(?=(\s|$)((\S*)(\s|$))?)')
@@ -90,8 +92,8 @@ def warn_common_chars(string):
               "not currently handle")
 
 
-def clean_numbers(string):
-    cleaner = NumberCleaner()
+def clean_numbers(string, lang='EN'):
+    cleaner = NumberCleaner(lang)
     string = NUM_CHECK.sub(cleaner.clean, string)
     return string
 
@@ -115,8 +117,14 @@ def clean_punctuations(string, table, punctuation_to_replace):
 
 
 class NumberCleaner():
-    def __init__(self):
+    def __init__(self, lang='EN'):
         super().__init__()
+        self.lang = lang
+        if self.lang == 'EN':
+            self.number_to_words = inflect.number_to_words
+        else:
+            self.number_to_words = partial(num2words, keywords={'lang': self.lang.lower()})
+
         self.reset()
 
     def reset(self):
@@ -125,10 +133,10 @@ class NumberCleaner():
 
     def format_final_number(self, whole_num, decimal):
         if self.currency:
-            return_string = inflect.number_to_words(whole_num)
+            return_string = self.number_to_words(whole_num)
             return_string += " dollar" if whole_num == 1 else " dollars"
             if decimal:
-                return_string += " and " + inflect.number_to_words(decimal)
+                return_string += " and " + self.number_to_words(decimal)
                 return_string += " cent" if whole_num == decimal else " cents"
             self.reset()
             return return_string
@@ -136,11 +144,11 @@ class NumberCleaner():
         self.reset()
         if decimal:
             whole_num += "." + decimal
-            return inflect.number_to_words(whole_num)
+            return self.number_to_words(whole_num)
         else:
             # Check if there are non-numbers
             def convert_to_word(match):
-                return " " + inflect.number_to_words(match.group(0)) + " "
+                return " " + self.number_to_words(match.group(0)) + " "
             return re.sub(r'[0-9,]+', convert_to_word, whole_num)
 
     def clean(self, match):
@@ -150,11 +158,11 @@ class NumberCleaner():
 
         time_match = TIME_CHECK.match(number)
         if time_match:
-            string = ws + inflect.number_to_words(time_match.group(1)) + "{}{}"
+            string = ws + self.number_to_words(time_match.group(1)) + "{}{}"
             mins = int(time_match.group(2))
             min_string = ""
             if mins != 0:
-                min_string = " " + inflect.number_to_words(time_match.group(2))
+                min_string = " " + self.number_to_words(time_match.group(2))
             ampm_string = ""
             if time_match.group(3):
                 ampm_string = " " + time_match.group(3)
@@ -162,7 +170,7 @@ class NumberCleaner():
 
         ord_match = ORD_CHECK.match(number)
         if ORD_CHECK.match(number):
-            return ws + inflect.number_to_words(ord_match.group(0))
+            return ws + self.number_to_words(ord_match.group(0))
 
         if self.currency is None:
             # Check if it is a currency

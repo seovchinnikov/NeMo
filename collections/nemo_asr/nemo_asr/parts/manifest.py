@@ -256,7 +256,10 @@ class ManifestENRU(ManifestBase):
         string = string.replace('ё', 'е')
         string = string.lower()
         string = re.sub(r'\s+', " ", string)
-        #string = clean_numbers(string)
+        if len(re.findall(r"[a-z]", string)) > len(re.findall(r"[а-яё]", string)):
+            string = clean_numbers(string, 'EN')
+        else:
+            string = clean_numbers(string, 'RU')
         string = clean_abbreviations(string)
         string = clean_punctuations(string, table, punctuation_to_replace)
         string = re.sub(r'\s+', " ", string).strip()

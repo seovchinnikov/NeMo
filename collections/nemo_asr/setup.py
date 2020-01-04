@@ -32,6 +32,7 @@ setuptools.setup(
         'unidecode',
         'youtube-dl',
         'srt',
-        'futures'
+        'futures',
+        'num2words'
     ]
 )
