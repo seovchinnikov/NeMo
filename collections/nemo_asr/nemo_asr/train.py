@@ -33,10 +33,10 @@ labels = jasper_model_definition['labels']
 # Instantiate neural modules
 data_layer = nemo_asr.AudioToTextDataLayer(
     manifest_filepath=train_dataset,
-    labels=labels, batch_size=10, manifest_class=ManifestENRU)
+    labels=labels, batch_size=12, manifest_class=ManifestENRU)
 data_layer_val = nemo_asr.AudioToTextDataLayer(
     manifest_filepath=eval_datasets,
-    labels=labels, batch_size=4, shuffle=False, manifest_class=ManifestENRU)
+    labels=labels, batch_size=1, shuffle=False, manifest_class=ManifestENRU)
 
 data_preprocessor = nemo_asr.AudioToMelSpectrogramPreprocessor()
 spec_augment = nemo_asr.SpectrogramAugmentation(rect_masks=5)
@@ -135,7 +135,7 @@ nf.train(
     optimizer="novograd",
     # Specify optimizer parameters such as num_epochs and lr
     optimization_params={
-        "num_epochs": 100, "lr": 0.01, "weight_decay": 1e-4
+        "num_epochs": 100, "lr": 0.005, "weight_decay": 1e-4
         },
-    batches_per_step=5
+    batches_per_step=4
     )

@@ -108,13 +108,17 @@ def append_to_manifest(manifest, audio_path, subs_srt_path):
         end = None
         text = ''
         for sub in parsed:
-            if start is None:
+            # check if need reset
+            if start is None or start > sub.start.total_seconds():
                 start = sub.start.total_seconds()
 
             if start + 16.7 < sub.end.total_seconds() and len(text) > 0:
-                manifest.write('{"audio_filepath": "%s", "offset": %s, "duration": %s, "text": "%s"}\n' %
-                               (os.path.basename(audio_path), start, end - start,
-                                text))
+                if end - start < 16.7:
+                    manifest.write('{"audio_filepath": "%s", "offset": %s, "duration": %s, "text": "%s"}\n' %
+                                   (os.path.basename(audio_path), start, end - start,
+                                    text))
+                else:
+                    logger.info('got seq longer than expected')
                 start = sub.start.total_seconds()
                 text = ''
 
