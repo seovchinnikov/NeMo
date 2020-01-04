@@ -52,7 +52,7 @@ def load_url_list(source_dir):
     for filename in glob(join(source_dir, '*')):
         with open(filename, 'r') as f:
             lines = f.readlines()
-            url_list.extend(lines)
+            url_list.extend(zip(lines, [os.path.basename(filename).replace('.list', '').lower()]*len(lines)))
     return url_list
 
 
@@ -125,14 +125,14 @@ def append_to_manifest(manifest, audio_path, subs_srt_path):
             text += ' ' + sub.content.replace('\r', ' ').replace('\n', ' ').replace('"', '').replace("'", '')
             end = sub.end.total_seconds()
 
-def crawl(list_dir, target_dir, threads, lang):
+def crawl(list_dir, target_dir, threads):
     urls = set(load_url_list(list_dir))
     if not os.path.exists(os.path.join(target_dir, 'tmp')):
         os.makedirs(os.path.join(target_dir, 'tmp'))
 
     with io.open(os.path.join(target_dir, 'manifest.json'), 'w', encoding="utf-8") as manifest:
         with ThreadPoolExecutor(max_workers=threads) as executor:
-            futures = {executor.submit(process_video, url, target_dir, lang): url for url in urls}
+            futures = {executor.submit(process_video, url, target_dir, lang): url for url, lang in urls}
             for future in tqdm(as_completed(futures), total=len(futures)):
                 url = futures[future]
                 try:
@@ -148,10 +148,9 @@ def parse_args():
     parser.add_argument('--listdir', type=str, required=True)
     parser.add_argument('--targetdir', type=str, required=True)
     parser.add_argument('--threads', type=int, required=True)
-    parser.add_argument('--lang', type=str, required=True)
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = parse_args()
-    crawl(args.listdir, args.targetdir, args.threads, args.lang)
+    crawl(args.listdir, args.targetdir, args.threads)
