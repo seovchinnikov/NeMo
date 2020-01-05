@@ -168,7 +168,7 @@ transcript_n}
             batch_size=batch_size,
             collate_fn=partial(seq_collate_fn, token_pad_value=pad_id),
             drop_last=drop_last,
-            shuffle=shuffle if sampler is None else False,
+            shuffle=True,
             sampler=sampler,
             num_workers=num_workers
         )

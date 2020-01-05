@@ -312,6 +312,7 @@ class CheckpointCallback(ActionCallback):
                 for mod, checkpoint in zip(modules_to_restore,
                                            module_checkpoints):
                     mod.restore_from(checkpoint, self.local_rank)
+                    print('restored %s'% mod)
             except (BaseException, ValueError) as e:
                 if self._force_load:
                     raise ValueError(

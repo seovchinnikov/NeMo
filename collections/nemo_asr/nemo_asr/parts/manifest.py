@@ -251,7 +251,7 @@ class ManifestENRU(ManifestBase):
     def clean_text(string, table, punctuation_to_replace):
         warn_common_chars(string)
         # string = unidecode(string)
-        safe_pattern = re.compile(r"[^a-zA-Z0-9а-яА-Яё &%+']")
+        safe_pattern = re.compile(r"[^a-zA-Z0-9а-яА-Яё ]")
         string = re.sub(safe_pattern, '', string)
         string = string.replace('ё', 'е')
         string = string.lower()
@@ -263,4 +263,5 @@ class ManifestENRU(ManifestBase):
         string = clean_abbreviations(string)
         string = clean_punctuations(string, table, punctuation_to_replace)
         string = re.sub(r'\s+', " ", string).strip()
+        string = string[:min(len(string), 369)]
         return string

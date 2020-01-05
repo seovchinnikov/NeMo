@@ -123,7 +123,7 @@ class NumberCleaner():
         if self.lang == 'EN':
             self.number_to_words = inflect.number_to_words
         else:
-            self.number_to_words = partial(num2words, keywords={'lang': self.lang.lower()})
+            self.number_to_words = partial(num2words, lang=self.lang.lower())
 
         self.reset()
 

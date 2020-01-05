@@ -5,20 +5,21 @@ import nemo_asr
 
 # Create a Neural Factory
 # It creates log files and tensorboard writers for us among other functions
+from nemo.utils.lr_policies import CosineAnnealing
 from parts.manifest import ManifestENRU
 
 nf = nemo.core.NeuralModuleFactory(
     log_dir='quartznet15x5_ru',
-    optimization_level=nemo.core.Optimization.mxprO1,
+    # optimization_level=nemo.core.Optimization.mxprO1,
     create_tb_writer=True)
 tb_writer = nf.tb_writer
 logger = nf.logger
 
 # Path to our training manifest
-train_dataset = "./dataset/youtube/target/train/manifest.json"
+train_dataset = "/home/sergei/datasets/asr/train/manifest.json"
 
 # Path to our validation manifest
-eval_datasets = "./dataset/youtube/target/val/manifest.json"
+eval_datasets = "/home/sergei/datasets/asr/val/manifest.json"
 
 # Jasper Model definition
 from ruamel.yaml import YAML
@@ -33,10 +34,10 @@ labels = jasper_model_definition['labels']
 # Instantiate neural modules
 data_layer = nemo_asr.AudioToTextDataLayer(
     manifest_filepath=train_dataset,
-    labels=labels, batch_size=12, manifest_class=ManifestENRU)
+    labels=labels, batch_size=16, manifest_class=ManifestENRU, num_workers=8)
 data_layer_val = nemo_asr.AudioToTextDataLayer(
     manifest_filepath=eval_datasets,
-    labels=labels, batch_size=1, shuffle=False, manifest_class=ManifestENRU)
+    labels=labels, batch_size=1, shuffle=False, manifest_class=ManifestENRU, num_workers=8)
 
 data_preprocessor = nemo_asr.AudioToMelSpectrogramPreprocessor()
 spec_augment = nemo_asr.SpectrogramAugmentation(rect_masks=5)
@@ -103,7 +104,7 @@ train_callback = nemo.core.SimpleLossLoggerCallback(
 saver_callback = nemo.core.CheckpointCallback(
     folder="./chkp",
     # Set how often we want to save checkpoints
-    step_freq=3500)
+    step_freq=500)
 
 # PRO TIP: while you can only have 1 train DAG, you can have as many
 # val DAGs and callbacks as you want. This is useful if you want to monitor
@@ -120,7 +121,7 @@ eval_callback = nemo.core.EvaluatorCallback(
     user_epochs_done_callback=partial(
         process_evaluation_epoch, tag="DEV-CLEAN", logger=logger
         ),
-    eval_step=3500,
+    eval_step=500,
     tb_writer=tb_writer)
 
 # Run training using your Neural Factory
@@ -135,7 +136,10 @@ nf.train(
     optimizer="novograd",
     # Specify optimizer parameters such as num_epochs and lr
     optimization_params={
-        "num_epochs": 100, "lr": 0.005, "weight_decay": 1e-4
+        "num_epochs": 100, "lr": 0.02, "weight_decay": 1e-4, "grad_norm_clip": None
         },
-    batches_per_step=4
+    batches_per_step=8,
+    lr_policy=CosineAnnealing(
+            100 * int(len(data_layer._dataset) / (16. * 8)),
+            warmup_steps=1000)
     )

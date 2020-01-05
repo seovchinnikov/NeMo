@@ -4,12 +4,15 @@
 import kaldi_io
 import os
 import pandas as pd
+import numpy as np
 import string
 import torch
 from torch.utils.data import Dataset
 
+from nemo.utils import get_logger
 from .manifest import ManifestBase, ManifestEN
 
+logger = get_logger('dataset')
 
 def seq_collate_fn(batch, token_pad_value=0):
     """collate batch of audio sig, audio len, tokens, tokens len
@@ -143,6 +146,7 @@ class AudioDataset(Dataset):
                                        unk_index=unk_index,
                                        normalize=normalize,
                                        logger=logger)
+        logger.info('Manifest: %s' % manifest_class)
         self.featurizer = featurizer
         self.trim = trim
         self.eos_id = eos_id
@@ -160,10 +164,14 @@ class AudioDataset(Dataset):
         if self.load_audio:
             duration = sample['duration'] if 'duration' in sample else 0
             offset = sample['offset'] if 'offset' in sample else 0
-            features = self.featurizer.process(sample['audio_filepath'],
-                                               offset=offset,
-                                               duration=duration,
-                                               trim=self.trim)
+            try:
+                features = self.featurizer.process(sample['audio_filepath'],
+                                                   offset=offset,
+                                                   duration=duration,
+                                                   trim=self.trim)
+            except Exception:
+                logger.info('during getitem featurizer %s' % index)
+                return self.__getitem__(np.random.randint(0, len(self.manifest)))
             f, fl = features, torch.tensor(features.shape[0]).long()
             # f = f / (torch.max(torch.abs(f)) + 1e-5)
         else:
