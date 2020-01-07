@@ -137,10 +137,10 @@ def crawl(list_dir, target_dir, threads):
                 url = futures[future]
                 try:
                     audio_path, subs_srt_path = future.result()
+                    append_to_manifest(manifest, audio_path, subs_srt_path)
                 except Exception as e:
                     logger.exception('Exception occured while cooking %s' % url)
 
-                append_to_manifest(manifest, audio_path, subs_srt_path)
 
 
 def parse_args():
