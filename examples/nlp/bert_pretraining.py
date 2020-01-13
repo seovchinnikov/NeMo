@@ -118,6 +118,8 @@ parser.add_argument("--max_steps", default=-1,
                         Used for preprocessed data")
 parser.add_argument("--dataset_name", default="wikitext-2", type=str)
 parser.add_argument("--load_dir", default=None, type=str)
+parser.add_argument("--bert_checkpoint", default=None, type=str,
+                    help="specify path to pretrained BERT weights")
 parser.add_argument("--work_dir", default="outputs/bert_lm", type=str)
 parser.add_argument("--save_epoch_freq", default=1, type=int)
 parser.add_argument("--save_step_freq", default=100, type=int)
@@ -179,6 +181,9 @@ bert_model = nemo_nlp.huggingface.BERT(
     hidden_act=args.hidden_act
     )
 
+if args.bert_checkpoint is not None:
+    bert_model.restore_from(args.bert_checkpoint)
+
 """ create necessary modules for the whole translation pipeline, namely
 data layers, BERT encoder, and MLM and NSP loss functions
 """
@@ -201,6 +206,10 @@ if not args.only_mlm_loss:
     bert_loss = nemo_nlp.LossAggregatorNM(num_inputs=2)
 
 # tie weights of MLM softmax layer and embedding layer of the encoder
+if (mlm_classifier.mlp.last_linear_layer.weight.shape !=
+        bert_model.bert.embeddings.word_embeddings.weight.shape):
+    raise ValueError("Final classification layer does not match embedding "
+                     "layer.")
 mlm_classifier.mlp.last_linear_layer.weight = \
     bert_model.bert.embeddings.word_embeddings.weight
 
